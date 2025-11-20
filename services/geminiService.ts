@@ -1,12 +1,14 @@
-
 import { GoogleGenAI, Modality } from "@google/genai";
 import { ServiceResponse } from '../types';
 
 const getAiClient = () => {
-  // Fix: Use process.env.API_KEY strictly as per guidelines
+  // STRICT REQUIREMENT: Access API Key exclusively via process.env.API_KEY
+  // Thanks to vite.config.ts configuration, this works even in browser environment.
   const apiKey = process.env.API_KEY;
+  
   if (!apiKey) {
-    throw new Error("API Key not found in environment variables (process.env.API_KEY)");
+    console.error("API Key is missing. Please check Environment Variables.");
+    throw new Error("API Key not found. Please add VITE_API_KEY to your Vercel Environment Variables.");
   }
   return new GoogleGenAI({ apiKey });
 };
@@ -25,7 +27,8 @@ export const processImageWithGemini = async (
 ): Promise<ServiceResponse> => {
   try {
     const ai = getAiClient();
-    const model = 'gemini-2.5-flash-image'; // Best for editing and multi-modal understanding
+    // Use the specific model for image generation/editing tasks
+    const model = 'gemini-2.5-flash-image'; 
 
     let systemInstruction = "";
     let finalPrompt = "";
@@ -33,7 +36,6 @@ export const processImageWithGemini = async (
     const presetText = presets.length > 0 ? `Style and Atmosphere details to apply: ${presets.join(", ")}.` : "";
 
     // CRITICAL PROMPT FOR STRICT MODE
-    // Updated to include clothing and accessories preservation
     const strictInstruction = strictMode 
       ? ` IMPORTANT - HIGH FIDELITY CONSTRAINT: You must PRESERVE the EXACT facial identity, facial structure, head shape, body proportions, and skin details of the person in the reference image. 
           Do NOT alter the face, eyes, nose, mouth, or jawline. The person in the output MUST look 100% identical to the reference.
@@ -47,6 +49,11 @@ export const processImageWithGemini = async (
 
     // combine aspect and resolution info
     const formatInstruction = `Output Settings: Generate the image with ${aspectRatioPrompt} and ${resolutionPrompt}.`;
+    
+    // Add random seed for variation on regenerate (simulated by appending random text if needed, 
+    // but Gemini supports seed in config. However, specifically for gemini-2.5-flash-image, 
+    // prompt variation is the most reliable way to force changes).
+    const randomSeed = Math.floor(Math.random() * 1000000);
 
     switch (mode) {
       case 'extract':
@@ -55,7 +62,6 @@ export const processImageWithGemini = async (
         break;
       
       case 'try-on':
-        // For try-on, we typically expect 2 images: [Model, Garment] or [Reference, Target]
         systemInstruction = "You are an expert AI fashion stylist and photo manipulator. You specialize in realistic virtual try-on.";
         finalPrompt = `Create a photorealistic image. Take the person from the first image and dress them in the clothing shown in the second image. ${strictInstruction} Maintain the fabric physics and drape naturally. ${presetText} ${formatInstruction} ${userPrompt}`;
         break;
@@ -78,13 +84,9 @@ export const processImageWithGemini = async (
       }
     }));
 
-    // Add text prompt
-    // Fix: gemini-2.5-flash-image does not support systemInstruction in config, so we append it to the prompt.
-    const combinedPrompt = `${systemInstruction}\n\n${finalPrompt}`;
+    // gemini-2.5-flash-image does not support systemInstruction in config, so we append it to the prompt.
+    const combinedPrompt = `${systemInstruction}\n\n${finalPrompt}\n\n[Variation Seed: ${randomSeed}]`;
     parts.push({ text: combinedPrompt } as any);
-
-    // Generate a random seed to ensure variation on regeneration
-    const randomSeed = Math.floor(Math.random() * 2147483647);
 
     const response = await ai.models.generateContent({
       model: model,
@@ -92,7 +94,7 @@ export const processImageWithGemini = async (
         parts: parts,
       },
       config: {
-        // Fix: Removed systemInstruction and seed as they are not supported in gemini-2.5-flash-image config
+        // Only responseModalities is supported for this model currently
         responseModalities: [Modality.IMAGE],
       }
     });

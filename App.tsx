@@ -11,7 +11,7 @@ import { processImageWithGemini } from './services/geminiService';
 import { NAV_ITEMS, DEFAULT_PRESETS, ASPECT_RATIOS, RESOLUTIONS } from './constants';
 import { AppMode, ImageAsset, PresetOption } from './types';
 
-// Bạn có thể thay đổi mã mặc định ở đây hoặc cấu hình trong Environment Variables của Vercel (VITE_ACCESS_CODE)
+// Bạn có thể thay đổi mã mặc định ở đây
 const DEFAULT_ACCESS_CODE = "150113"; 
 
 const App: React.FC = () => {
@@ -87,8 +87,10 @@ const App: React.FC = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // FIX: Use process.env.ACCESS_CODE or default
-    const correctCode = process.env.ACCESS_CODE || DEFAULT_ACCESS_CODE;
+    
+    // FIX: Use type casting (import.meta as any) to bypass TS error "Property 'env' does not exist on type 'ImportMeta'"
+    // This checks VITE_ACCESS_CODE (Vercel), then process.env.ACCESS_CODE, then falls back to default.
+    const correctCode = (import.meta as any).env?.VITE_ACCESS_CODE || process.env.ACCESS_CODE || DEFAULT_ACCESS_CODE;
     
     if (accessCodeInput === correctCode) {
       setIsAuthenticated(true);
@@ -689,7 +691,7 @@ const App: React.FC = () => {
                                 <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Prompt tham khảo (Debug Info)</h4>
                                 <button 
                                     onClick={copyPromptToClipboard}
-                                    className={`flex items-center space-x-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                                    className={`flex items-center space-x-1 px-2 py-1 rounded-lg text-xs font-medium transition-colors ${
                                         copySuccess ? 'text-green-400 bg-green-900/20' : 'text-slate-400 hover:text-white hover:bg-slate-800'
                                     }`}
                                 >
