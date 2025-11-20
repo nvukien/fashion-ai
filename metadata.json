@@ -1,0 +1,5 @@
+{
+  "name": "FashionAI Studio",
+  "description": "A professional AI-powered fashion studio for clothing extraction, virtual try-on, photo editing, and upscaling.",
+  "requestFramePermissions": []
+}
