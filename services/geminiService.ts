@@ -3,9 +3,10 @@ import { GoogleGenAI, Modality } from "@google/genai";
 import { ServiceResponse } from '../types';
 
 const getAiClient = () => {
+  // Fix: Use process.env.API_KEY strictly as per guidelines
   const apiKey = process.env.API_KEY;
   if (!apiKey) {
-    throw new Error("API Key not found in environment variables");
+    throw new Error("API Key not found in environment variables (process.env.API_KEY)");
   }
   return new GoogleGenAI({ apiKey });
 };
@@ -78,7 +79,9 @@ export const processImageWithGemini = async (
     }));
 
     // Add text prompt
-    parts.push({ text: finalPrompt } as any);
+    // Fix: gemini-2.5-flash-image does not support systemInstruction in config, so we append it to the prompt.
+    const combinedPrompt = `${systemInstruction}\n\n${finalPrompt}`;
+    parts.push({ text: combinedPrompt } as any);
 
     // Generate a random seed to ensure variation on regeneration
     const randomSeed = Math.floor(Math.random() * 2147483647);
@@ -89,9 +92,8 @@ export const processImageWithGemini = async (
         parts: parts,
       },
       config: {
-        systemInstruction: systemInstruction,
+        // Fix: Removed systemInstruction and seed as they are not supported in gemini-2.5-flash-image config
         responseModalities: [Modality.IMAGE],
-        seed: randomSeed, // Force randomness
       }
     });
 

@@ -87,8 +87,8 @@ const App: React.FC = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // Ưu tiên lấy mã từ biến môi trường, nếu không có thì dùng mã mặc định
-    const correctCode = process.env.VITE_ACCESS_CODE || DEFAULT_ACCESS_CODE;
+    // FIX: Use process.env.ACCESS_CODE or default
+    const correctCode = process.env.ACCESS_CODE || DEFAULT_ACCESS_CODE;
     
     if (accessCodeInput === correctCode) {
       setIsAuthenticated(true);
