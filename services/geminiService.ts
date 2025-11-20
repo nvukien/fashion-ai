@@ -116,9 +116,17 @@ export const processImageWithGemini = async (
 
   } catch (error: any) {
     console.error("Gemini API Error:", error);
+    
+    let errorMessage = error.message || "Unknown error occurred during generation";
+
+    // Handle Quota Exceeded Error specifically
+    if (errorMessage.includes("429") || errorMessage.includes("Quota exceeded") || errorMessage.includes("Resource has been exhausted")) {
+        errorMessage = "⚠️ Bạn đã hết lượt tạo ảnh miễn phí (Quota) của Google trong ngày hoặc đang gửi quá nhiều yêu cầu cùng lúc. Vui lòng thử lại sau vài phút hoặc đổi API Key khác.";
+    }
+
     return {
       success: false,
-      error: error.message || "Unknown error occurred during generation"
+      error: errorMessage
     };
   }
 };
